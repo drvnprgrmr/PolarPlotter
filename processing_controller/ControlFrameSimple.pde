@@ -28,6 +28,11 @@ public class ControlFrameSimple extends PApplet {
     bg = theColor;
   }
 
+  public void setWindowLocation(int x, int y) {
+    if (surface != null) {
+      surface.setLocation(x, y);
+    }
+  }
 
   public ControlP5 cp5() {
     return this.cp5;
@@ -37,4 +42,3 @@ public class ControlFrameSimple extends PApplet {
 
   Object parent;
 }
-

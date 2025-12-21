@@ -94,7 +94,8 @@ void hideAllControls() {
 Map<String, Panel> buildPanels() {
   Map<String, Panel> panels = new HashMap<String, Panel>();
 
-  float panelHeight = frame.getHeight() - getMainPanelPosition().y - (DEFAULT_CONTROL_SIZE.y*3);
+  // Use 'height' directly instead of 'frame.getHeight()'
+  float panelHeight = height - getMainPanelPosition().y - (DEFAULT_CONTROL_SIZE.y*3);
   Rectangle panelOutlineInput = new Rectangle(getMainPanelPosition(), 
   new PVector((DEFAULT_CONTROL_SIZE.x+CONTROL_SPACING.x)*2, panelHeight));
   Panel inputPanel = new Panel(PANEL_NAME_INPUT, panelOutlineInput);
@@ -1187,5 +1188,3 @@ Set<String> buildControlNames()
   
   return result;
 }
-
-

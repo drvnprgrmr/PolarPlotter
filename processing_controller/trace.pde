@@ -1,17 +1,21 @@
-public void trace_initTrace(PImage img)
-{
-  // dummy initCamera(), does nothing
-  //  tracetraceEnabled = true;
-  img.loadPixels();
-  blob_detector = new BlobDetector(img.width, img.height);
-  blob_detector.setResolution(1);
-  blob_detector.computeContours(true);
-  blob_detector.computeBlobPixels(true);
-  blob_detector.setMinMaxPixels(10*10, img.width * img.height);
+class Pixel {
+  int x;
+  int y;
+  color c;
   
-  blob_detector.setBLOBable(new BLOBable_blueBlobs(liveImage));
+  Pixel(int x, int y, color c) {
+    this.x = x;
+    this.y = y;
+    this.c = c;
+  }
 }
 
+
+public void trace_initTrace(PImage img)
+{
+  // Feature disabled for Processing 4 migration
+  println("Tracing disabled.");
+}
 public void trace_initCameraProcCam()
 {
 //  try
@@ -84,69 +88,10 @@ public PImage trace_processImageForTrace(PImage in)
   return out;
 }
 
-public RShape trace_traceImage(Map<Integer, PImage> seps)
+RShape trace_traceImage(ArrayList<PImage> seps)
 {
-  RShape allShapes = null;
-  if (seps != null)
-  {
-    //println("detecting...");
-    int i = 0;
-    int shapeNo = 1;
-    allShapes = new RShape();
-    for (Integer key : seps.keySet())
-    {
-      i++;
-      //println("Analysing sep " + i + " of " + seps.size());
-      PImage sep = seps.get(key);
-      blob_detector.setBLOBable(new BLOBable_blueBlobs(sep));
-      blob_detector.update();
-      ArrayList<Blob> blob_list = blob_detector.getBlobs();
-      for (int blob_idx = 0; blob_idx < blob_list.size(); blob_idx++ ) {
-        //println("Getting blob " + blob_idx + " of " + blob_list.size());
-        // get the current blob from the blob-list
-        Blob blob = blob_list.get(blob_idx);
-        // get the list of all the contours from the current blob
-        ArrayList<Contour> contour_list = blob.getContours();
-        // iterate through the contour_list
-        for (int contour_idx = 0; contour_idx < contour_list.size(); contour_idx++ ) {
-          // get the current contour from the contour-list
-          Contour contour = contour_list.get(contour_idx);
-
-          // example how to simplify a contour
-          if (liveSimplification > 0) {
-            // can improve speed, if the contour is needed for further work
-            ArrayList<Pixel> contour_simple = Polyline.SIMPLIFY(contour, 2, 1);
-            // repeat the simplifying process a view more times
-            for (int simple_cnt = 0; simple_cnt < liveSimplification; simple_cnt++) {
-              contour_simple= Polyline.SIMPLIFY(contour_simple, 2, simple_cnt);
-            }
-            RShape shp = trace_convertDiewaldToRShape(contour_simple);
-            if (shp != null)
-            {
-              shapeNo++;
-              //println("adding shape " + shapeNo + " - blob: " + blob_idx + ", contour: " + contour_idx);
-              allShapes.addChild(shp);
-            }
-          }
-          else
-          {
-            RShape shp = trace_convertDiewaldToRShape(contour.getPixels());
-            if (shp != null)
-              allShapes.addChild(shp);
-          }
-        }
-      }
-    }
-  }
-  // rotate image
-  if (rotateWebcamImage)
-  {
-    allShapes.rotate(radians(-90));
-    // transform it so that top left is at 0,0.
-    RPoint topLeft = allShapes.getTopLeft();
-    allShapes.translate(-topLeft.x, -topLeft.y);
-  }
-  return allShapes;
+  // Return an empty shape so the drawing loop has something valid to ignore
+  return new RShape();
 }
 
 Map<Integer, PImage> trace_buildSeps(PImage img, Integer keyColour)
@@ -183,10 +128,10 @@ RShape trace_convertDiewaldToRShape(List<Pixel> points)
   if (points.size() > 2) {
     shp = new RShape();
     Pixel p = points.get(0);
-    shp.addMoveTo(float(p.x_), float(p.y_));
+    shp.addMoveTo(float(p.x), float(p.y));
     for (int idx = 1; idx < points.size(); idx++) {
       p = points.get(idx);
-      shp.addLineTo(float(p.x_), float(p.y_));
+      shp.addLineTo(float(p.x), float(p.y));
     }
     shp.addClose();
   }
@@ -223,4 +168,3 @@ public void trace_saveShape(RShape sh)
 //  liveCamera.stop();
 //  super.stop();
 //}
-

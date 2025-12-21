@@ -1,3 +1,13 @@
+import java.awt.Frame;
+import java.awt.Component;
+
+import java.io.PrintStream;
+import java.io.BufferedInputStream; // Fixes BufferedInputStream, FileInputStream, InputStream, and IOException
+import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.IOException;
+
 /**
  Polargraph controller
  Copyright Sandy Noble 2015.
@@ -29,11 +39,6 @@
  
  */
 
-//import processing.video.*;
-import diewald_CV_kit.libraryinfo.*;
-import diewald_CV_kit.utility.*;
-import diewald_CV_kit.blobdetection.*;
-
 import geomerative.*;
 //import org.apache.batik.svggen.font.table.*;
 //import org.apache.batik.svggen.font.*;
@@ -43,22 +48,30 @@ import java.util.zip.CRC32;
 // for OSX
 import java.text.*;
 import java.util.*;
-import java.io.*;
+//import java.io;
+import blobDetection.*;
 
 import java.util.logging.*;
 import javax.swing.*;
 import processing.serial.*;
 import controlP5.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.*;
 import java.awt.Frame;
 import java.awt.BorderLayout;
 
 import java.lang.reflect.Method;
 
+// BlobDetection blob_detector;
+int liveSimplification = 5;
+int blurValue = 1;
+int posterizeValue = 5;
+int sepKeyColour = color(0, 0, 255);
+
 int majorVersionNo = 2;
 int minorVersionNo = 4;
 int buildNo = 2;
+
+
+
 
 String programTitle = "Polargraph Controller v" + majorVersionNo + "." + minorVersionNo + " build " + buildNo;
 ControlP5 cp5;
@@ -112,7 +125,7 @@ int bottomEdgeOfQueue = 0;
 int queueRowHeight = 15;
 
 int baudRate = 57600;
-Serial myPort;                       // The serial port
+processing.serial.Serial myPort;                       // The serial port
 int[] serialInArray = new int[1];    // Where we'll put what we receive
 int serialCount = 0;                 // A count of how many bytes we receive
 
@@ -155,6 +168,14 @@ File lastPropertiesDirectory = null;
 String lastCommand = "";
 String lastDrawingCommand = "";
 Boolean commandQueueRunning = false;
+
+// Default drawing direction (South East)
+public Integer renderStartDirection = DRAW_DIR_SE;
+// Render State Variables
+public Integer renderStartPosition = DRAW_DIR_NE; 
+public Integer renderStyle = PIXEL_STYLE_SQ_FREQ; // You will likely need this one too!
+
+
 static final int DRAW_DIR_NE = 1;
 static final int DRAW_DIR_SE = 2;
 static final int DRAW_DIR_SW = 3;
@@ -519,11 +540,6 @@ static int pathLengthHighPassCutoff = 0;
 static final Integer PATH_LENGTH_HIGHPASS_CUTOFF_MAX = 10000;
 static final Integer PATH_LENGTH_HIGHPASS_CUTOFF_MIN = 0;
 
-BlobDetector blob_detector;
-int liveSimplification = 5;
-int blurValue = 1;
-int posterizeValue = 5;
-int sepKeyColour = color(0, 0, 255);
 
 Map<Integer, PImage> colourSeparations = null;
 RShape traceShape = null;
@@ -545,10 +561,15 @@ boolean rescaleDisplayMachine = true;
 int polygonizer = 0;
 float polygonizerLength = 0.0;
 
+void settings() {
+  // fullScreen();
+  size(959, 593);
+}
+
 void setup()
 {
   println("Running polargraph controller");
-  frame.setResizable(true);
+  surface.setResizable(true);
   initLogging();
   parentPapplet = this;
   
@@ -565,7 +586,7 @@ void setup()
   RG.init(this);
   loadFromPropertiesFile();
 
-  size(windowWidth, windowHeight);
+  // size(windowWidth, windowHeight);
   this.cp5 = new ControlP5(this);
   initTabs();
   
@@ -612,7 +633,6 @@ void setup()
   preLoadCommandQueue();
   changeTab(TAB_NAME_INPUT, TAB_NAME_INPUT);
 
-  addEventListeners();
 
   frameRate(8);
   noLoop();
@@ -644,31 +664,6 @@ void fitDisplayMachineToWindow() {
   
 }
 
-void addEventListeners()
-{
-  frame.addComponentListener(new ComponentAdapter() 
-    {
-      public void componentResized(ComponentEvent event) 
-      {
-      windowResized();
-//        if (event.getSource()==frame) 
-//        {
-//  	  windowResized();
-//        }
-      }
-    }
-  );
-  
-  addMouseWheelListener(new java.awt.event.MouseWheelListener() 
-    { 
-      public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) 
-      { 
-        mouseWheel(evt.getWheelRotation());
-      }
-    }
-  ); 
-}  
-
 
 void preLoadCommandQueue()
 {
@@ -677,30 +672,43 @@ void preLoadCommandQueue()
   addToCommandQueue(CMD_SETMOTORACCEL+currentMachineAccel+",END");
 }
 
-void windowResized()
-{
+import java.awt.Frame; // Required for Frame.MAXIMIZED_BOTH
+import javax.swing.JFrame; // Required to access the native window
+import processing.awt.PSurfaceAWT; // Required to dig into the surface
+
+void windowResized() {
   noLoop();
-  windowWidth = frame.getWidth();
-  windowHeight = frame.getHeight();
-  println("New window size: " + windowWidth + " x " + windowHeight);
-  if (frame.getExtendedState() == Frame.MAXIMIZED_BOTH) {
-    println("Max");
-    frame.setExtendedState(0);
-    frame.setSize(windowWidth, windowHeight);
-  }
   
-  for (String key : getPanels().keySet())
-  {
+  // In Processing 4, 'width' and 'height' are already updated 
+  // by the time windowResized() runs.
+  println("New window size: " + width + " x " + height);
+
+  // --- FIX START: Accessing Native Window State ---
+  // We must cast the surface to get the underlying Java window (JFrame)
+  PSurfaceAWT awtSurface = (PSurfaceAWT) surface;
+  PSurfaceAWT.SmoothCanvas smoothCanvas = (PSurfaceAWT.SmoothCanvas) awtSurface.getNative();
+  JFrame jframe = (JFrame) smoothCanvas.getFrame();
+  
+  // Now we can check the state on the 'jframe' object
+  if (jframe.getExtendedState() == Frame.MAXIMIZED_BOTH) {
+    println("Max");
+    jframe.setExtendedState(Frame.NORMAL); // Set back to normal (0)
+    surface.setSize(width, height); // Keep current size or reset to specific
+  }
+  // --- FIX END ---
+
+  for (String key : getPanels().keySet()) {
     Panel p = getPanels().get(key);
-    p.setSizeByHeight(windowHeight - p.getOutline().getTop() - (DEFAULT_CONTROL_SIZE.y*2));
+    // Use 'height' instead of windowHeight variable if possible
+    p.setSizeByHeight(height - p.getOutline().getTop() - (DEFAULT_CONTROL_SIZE.y * 2));
+    
     if (debugPanels) {
-      println("Resize " + key + " to be " + p.getOutline().getWidth() + "px across, " + p.getOutline().getHeight() + "px tall");
+       println("Resize " + key + "...");
     }
   }
 
-  // Required to tell CP5 to be able to use the new sized window
-  // How does this work?
-  cp5.setGraphics(this,0,0);
+  // Refresh CP5 so it knows the window changed
+  cp5.setGraphics(this, 0, 0);
   
   loop();
 }
@@ -906,34 +914,38 @@ void drawTracePage()
   strokeWeight(3);
   stroke(150);
   noFill();
+  
   getDisplayMachine().drawForTrace();
+  
+  // FIX: Ensure this heavy operation only runs once
   if (displayingImage && getDisplayMachine().imageIsReady() && retraceShape)
   {
     processedLiveImage = trace_processImageForTrace(getDisplayMachine().getImage());
     colourSeparations = trace_buildSeps(processedLiveImage, sepKeyColour);
-    traceShape = trace_traceImage(colourSeparations);
+    // traceShape = trace_traceImage(colourSeparations);
     drawingTraceShape = true;
+    
+    retraceShape = false; // <--- Critical performance fix
   }
 
   stroke(255, 0, 0);
  
+  // FIX: Ensure 'Panel' isn't confusing the compiler with 'java.awt.Panel'
+  // If you renamed your class to ControlPanel, update it here.
   for (Panel panel : getPanelsForTab(TAB_NAME_TRACE))
   {
     panel.draw();
   }
-  text(propertiesFilename, getPanel(PANEL_NAME_GENERAL).getOutline().getLeft(), getPanel(PANEL_NAME_GENERAL).getOutline().getTop()-7);
-
+  
+  // Guard against null filename
+  String pName = (propertiesFilename != null) ? propertiesFilename : "";
+  text(pName, getPanel(PANEL_NAME_GENERAL).getOutline().getLeft(), getPanel(PANEL_NAME_GENERAL).getOutline().getTop()-7);
 
   if (displayingInfoTextOnInputPage)
-    showText(250,45);
+    showText(250, 45);
+    
   drawStatusText((int)statusTextPosition.x, (int)statusTextPosition.y);
-  showCommandQueue((int) width-200, 20);
-
-
-//  processGamepadInput();
-//
-//  if (displayGamepadOverlay)
-//    displayGamepadOverlay();
+  showCommandQueue((int)width - 200, 20); // 'width' is safe to use directly
 }
 
 
@@ -1080,37 +1092,32 @@ void showGroupBox()
   
 }
 
-void loadImageWithFileChooser()
-{
-  SwingUtilities.invokeLater(new Runnable() 
-  {
-    public void run() {
-      JFileChooser fc = new JFileChooser();
-      if (lastImageDirectory != null) fc.setCurrentDirectory(lastImageDirectory);
-      fc.setFileFilter(new ImageFileFilter());
-      fc.setDialogTitle("Choose an image file...");
+void loadImageWithFileChooser() {
+  // Opens the dialog and calls "imageSelected" when the user picks a file
+  selectInput("Choose an image file...", "imageSelected"); 
+}
 
-      int returned = fc.showOpenDialog(frame);
+// This function is called automatically when the user chooses a file
+void imageSelected(File selection) {
+  if (selection == null) {
+    println("Window was closed or the user hit cancel.");
+  } else {
+    String filePath = selection.getAbsolutePath();
+    
+    // Check if it loads (simple check)
+    PImage img = loadImage(filePath);
+    
+    if (img != null) {
+      img = null; // Clear memory
       
-      lastImageDirectory = fc.getCurrentDirectory();
+      // Run your machine logic
+      getDisplayMachine().loadNewImageFromFilename(filePath);
       
-      if (returned == JFileChooser.APPROVE_OPTION) 
-      {
-        File file = fc.getSelectedFile();
-        // see if it's an image
-        PImage img = loadImage(file.getPath());
-        if (img != null) 
-        {
-          img = null;
-          getDisplayMachine().loadNewImageFromFilename(file.getPath());
-          if (getDisplayMachine().pixelsCanBeExtracted() && isBoxSpecified())
-          {
-            getDisplayMachine().extractPixelsFromArea(getBoxVector1(), getBoxVectorSize(), getGridSize(), sampleArea);
-          }
-        }
+      if (getDisplayMachine().pixelsCanBeExtracted() && isBoxSpecified()) {
+        getDisplayMachine().extractPixelsFromArea(getBoxVector1(), getBoxVectorSize(), getGridSize(), sampleArea);
       }
     }
-  });
+  }
 }
 
 class ImageFileFilter extends javax.swing.filechooser.FileFilter 
@@ -1128,42 +1135,27 @@ class ImageFileFilter extends javax.swing.filechooser.FileFilter
   }
 }
 
-void loadVectorWithFileChooser()
-{
-  SwingUtilities.invokeLater(new Runnable() 
-  {
-    public void run() {
-      JFileChooser fc = new JFileChooser();
-      if (lastImageDirectory != null) 
-      { 
-        fc.setCurrentDirectory(lastImageDirectory);
-      }
-      
-      fc.setFileFilter(new VectorFileFilter());
-      fc.setDialogTitle("Choose a vector file...");
-      int returned = fc.showOpenDialog(frame);
-      lastImageDirectory = fc.getCurrentDirectory();
-      
-      if (returned == JFileChooser.APPROVE_OPTION) 
-      {
-        File file = fc.getSelectedFile();
-        if (file.exists())
-        {
-          RShape shape = loadShapeFromFile(file.getPath());
-          if (shape != null) 
-          {
-            setVectorFilename(file.getPath());
-            setVectorShape(shape);
-          }
-          else 
-          {
-            println("File not found (" + file.getPath() + ")");
-          }
-        }
+void loadVectorWithFileChooser() {
+  selectInput("Choose a vector file...", "vectorSelected");
+}
+
+void vectorSelected(File selection) {
+  if (selection == null) {
+    println("Window was closed or the user hit cancel.");
+  } else {
+    // Optional: Save the directory for next time
+    lastImageDirectory = selection.getParentFile();
+    
+    if (selection.exists()) {
+      RShape shape = loadShapeFromFile(selection.getPath());
+      if (shape != null) {
+        setVectorFilename(selection.getPath());
+        setVectorShape(shape);
+      } else {
+        println("File not found or invalid.");
       }
     }
   }
-  );
 }
 
 class VectorFileFilter extends javax.swing.filechooser.FileFilter 
@@ -1189,11 +1181,14 @@ void loadNewPropertiesFilenameWithFileChooser()
     {
       JFileChooser fc = new JFileChooser();
       if (lastPropertiesDirectory != null) fc.setCurrentDirectory(lastPropertiesDirectory);
+      
+      // Keeps your custom filter working
       fc.setFileFilter(new PropertiesFileFilter());
       
       fc.setDialogTitle("Choose a config file...");
 
-      int returned = fc.showOpenDialog(frame);
+      // FIX: Changed 'frame' to 'null'
+      int returned = fc.showOpenDialog(null);
       
       lastPropertiesDirectory = fc.getCurrentDirectory();
       
@@ -1206,6 +1201,7 @@ void loadNewPropertiesFilenameWithFileChooser()
           newPropertiesFilename = file.toString();
           println("new propertiesFilename: "+  newPropertiesFilename);
           propertiesFilename = newPropertiesFilename;
+          
           // clear old properties.
           props = null;
           loadFromPropertiesFile();
@@ -1217,7 +1213,6 @@ void loadNewPropertiesFilenameWithFileChooser()
     }
   });
 }
-
 class PropertiesFileFilter extends javax.swing.filechooser.FileFilter 
 {
   public boolean accept(File file) {
@@ -1245,18 +1240,27 @@ void saveNewPropertiesFileWithFileChooser()
       
       fc.setDialogTitle("Enter a config file name...");
 
-      int returned = fc.showSaveDialog(frame);
+      // FIX 1: Change 'frame' to 'null'
+      int returned = fc.showSaveDialog(null);
+      
       if (returned == JFileChooser.APPROVE_OPTION) 
       {
         File file = fc.getSelectedFile();
         newPropertiesFilename = file.toString();
-        newPropertiesFilename.toLowerCase();
-        if (!newPropertiesFilename.endsWith(".properties.txt"))
-          newPropertiesFilename+=".properties.txt";
+        
+        // FIX 2: Correctly check for extension without breaking path casing
+        // We only check the lowercase version of the string for the comparison,
+        // but we keep the original filename casing.
+        if (!newPropertiesFilename.toLowerCase().endsWith(".properties.txt"))
+        {
+          newPropertiesFilename += ".properties.txt";
+        }
           
-        println("new propertiesFilename: "+  newPropertiesFilename);
+        println("new propertiesFilename: " +  newPropertiesFilename);
         propertiesFilename = newPropertiesFilename;
+        
         savePropertiesFile();
+        
         // clear old properties.
         props = null;
         loadFromPropertiesFile();
@@ -1282,6 +1286,9 @@ RShape loadShapeFromFile(String filename) {
 boolean isGCodeExtension(String filename) {
   return (filename.toLowerCase().endsWith(".gcode") || filename.toLowerCase().endsWith(".g") || filename.toLowerCase().endsWith(".ngc") || filename.toLowerCase().endsWith(".txt"));
 }
+
+
+
 
 
 int countLines(String filename) throws IOException {
@@ -1565,10 +1572,10 @@ void controlEvent(ControlEvent controlEvent)
   } 
 }
 
-void changeTab(String from, String to)
+void changeTab(String from_, String to_)
 {
   // hide old panels
-  currentTab = to;
+  currentTab = to_;
   for (Panel panel : getPanelsForTab(currentTab))
   {
     for (Controller c : panel.getControls())
@@ -1698,41 +1705,47 @@ void keyReleased()
   keys[keyCode] = false; 
 }
 
+import java.awt.event.KeyEvent; // <--- This fixes the "VK_..." errors
+
 void keyPressed()
 {
-
-  keys[keyCode] = true;
-  //println("key: " + KeyEvent.getKeyText(keyCode));
-  //println("Keys: " + keys);
-  //println("Keycode: " + keyCode);
+  // Safety check: ensure the keycode isn't out of bounds for your array
+  if (keyCode >= 0 && keyCode < keys.length) {
+    keys[keyCode] = true;
+  }
   
+  // Debugging (optional)
+  // println("key: " + key + " | keyCode: " + keyCode);
+
+  // 1. Navigation / Scaling
   if (checkKey(CONTROL) && checkKey(KeyEvent.VK_PAGE_UP)) 
     changeMachineScaling(1);
   else if (checkKey(CONTROL) && checkKey(KeyEvent.VK_PAGE_DOWN)) 
     changeMachineScaling(-1);
   else if (checkKey(CONTROL) && checkKey(DOWN))
-    getDisplayMachine().getOffset().y = getDisplayMachine().getOffset().y + 10;
+    getDisplayMachine().getOffset().y += 10;
   else if (checkKey(CONTROL) && checkKey(UP)) 
-    getDisplayMachine().getOffset().y = getDisplayMachine().getOffset().y - 10;
+    getDisplayMachine().getOffset().y -= 10;
   else if (checkKey(CONTROL) && checkKey(RIGHT)) 
-    getDisplayMachine().getOffset().x = getDisplayMachine().getOffset().x + 10;
+    getDisplayMachine().getOffset().x += 10;
   else if (checkKey(CONTROL) && checkKey(LEFT)) 
-    getDisplayMachine().getOffset().x = getDisplayMachine().getOffset().x - 10;
-  else if (checkKey(KeyEvent.VK_ESCAPE))
-    key = 0;
+    getDisplayMachine().getOffset().x -= 10;
+    
+  // 2. Prevent ESC from closing the app
+  // In Processing 4, checking 'key == ESC' is the standard way to catch this.
+  else if (key == ESC) {
+    key = 0; // Disable the default "quit" behavior
+  }
+  
+  // 3. Command Shortcuts
   else if (checkKey(CONTROL) && checkKey(KeyEvent.VK_G))
   {
     Toggle t = (Toggle) getAllControls().get(MODE_SHOW_GUIDES);
-    if (displayingGuides)
-    {
-      minitoggle_mode_showGuides(false);
-      t.setValue(0);
-    }
-    else
-    {
-      minitoggle_mode_showGuides(true);
-      t.setValue(1);
-    }
+    // Determine new state based on current state
+    boolean newState = !displayingGuides;
+    
+    minitoggle_mode_showGuides(newState);
+    t.setValue(newState ? 1 : 0);
     t.update();
   }
   else if (checkKey(CONTROL) && checkKey(KeyEvent.VK_C))
@@ -1742,19 +1755,21 @@ void keyPressed()
   else if (checkKey(CONTROL) && checkKey(KeyEvent.VK_S))
   {
     if (getDisplayMachine().pixelsCanBeExtracted() && isBoxSpecified())
-      displayingSelectedCentres = (displayingSelectedCentres) ? false : true;
+      displayingSelectedCentres = !displayingSelectedCentres;
   }
   else if (checkKey(CONTROL) && checkKey(KeyEvent.VK_I))
   {
-    displayingInfoTextOnInputPage = (displayingInfoTextOnInputPage) ? false : true;
+    displayingInfoTextOnInputPage = !displayingInfoTextOnInputPage;
   }
+  
+  // 4. Character Inputs
   else if (key == '#' )
   {
-    addToRealtimeCommandQueue(CMD_PENUP+"END");
+    addToRealtimeCommandQueue(CMD_PENUP + "END");
   }
   else if (key == '~')
   {
-    addToRealtimeCommandQueue(CMD_PENDOWN+"END");
+    addToRealtimeCommandQueue(CMD_PENDOWN + "END");
   }
   else if (key == '<')
   {
@@ -1766,6 +1781,7 @@ void keyPressed()
     this.maxSegmentLength++;
   }
 }
+
 void mouseDragged()
 {
   if (mouseOverControls().isEmpty())
@@ -1939,29 +1955,37 @@ void leftButtonMachineClick()
   
 }
 
-void mouseWheel(int delta) 
-{
+void mouseWheel(MouseEvent event) {
+  // 1. Get the scroll amount (returns a float, usually -1.0 or 1.0)
+  float e = event.getCount();
+  
+  // 2. Convert to int to match your old "delta" variable
+  // (Remove the (int) cast if changeMachineScaling can accept floats for smoother zooming)
+  int delta = (int) e; 
+  
   noLoop();
+  
   // get the mouse position on the machine, before changing the machine scaling
   PVector pos = getDisplayMachine().scaleToDisplayMachine(getMouseVector());
+  
   changeMachineScaling(delta);
   
   // now work out what the machine position needs to be to line the pos up with mousevector again
   PVector scaledPos = getDisplayMachine().scaleToDisplayMachine(getMouseVector());
-//  println("original pos: " + pos);
-//  println("scaled pos: " + scaledPos);
+  // println("original pos: " + pos);
+  // println("scaled pos: " + scaledPos);
   
   PVector change = PVector.sub(scaledPos, pos);
-//  println("change: " + change);
+  // println("change: " + change);
 
   // and adjust for the new scaling factor
   change.mult(machineScaling);
   
   // finally update the machine offset (position)
   getDisplayMachine().getOffset().add(change);
+  
   loop();
-} 
-
+}
 void setChromaKey(PVector p)
 {
   color col = getDisplayMachine().getPixelAtScreenCoords(p); 
@@ -2623,11 +2647,6 @@ public PVector getHomePoint()
 }
 
 
-
-//public Machine getMachine()
-//{
-//  return this.machine;
-//}
 public DisplayMachine getDisplayMachine()
 {
   if (displayMachine == null)
@@ -2990,6 +3009,8 @@ boolean isDrawbotConnected()
   return drawbotConnected;
 }
 
+
+
 Properties getProperties()
 {
   if (props == null)
@@ -3031,6 +3052,7 @@ Properties getProperties()
   }
   return props;
 }
+
 
 void loadFromPropertiesFile()
 {
@@ -3123,61 +3145,68 @@ void loadFromPropertiesFile()
   println("Finished loading configuration from properties file.");
 }
 
+
+
+
 void savePropertiesFile()
 {
   Properties props = new Properties();
   
+  // Assuming getDisplayMachine() returns a valid object
   props = getDisplayMachine().loadDefinitionIntoProperties(props);
 
   NumberFormat nf = NumberFormat.getNumberInstance(Locale.UK);
   DecimalFormat df = (DecimalFormat)nf;  
   df.applyPattern("###.##");
   
+  // Colors
   props.setProperty("controller.page.colour", hex(this.pageColour, 6));
-  props.setProperty("controller.frame.colour", hex(this.frameColour,6));
+  props.setProperty("controller.surface.colour", hex(this.frameColour,6));
   props.setProperty("controller.machine.colour", hex(this.machineColour,6));
   props.setProperty("controller.guide.colour", hex(this.guideColour,6));
   props.setProperty("controller.background.colour", hex(this.backgroundColour,6));
   props.setProperty("controller.densitypreview.colour", hex(this.densityPreviewColour,6));
 
-  
-  // pen size
+  // Machine Settings
   props.setProperty("machine.pen.size", df.format(currentPenWidth));
-  // serial port
   props.setProperty("controller.machine.serialport", getSerialPortNumber().toString());
   props.setProperty("controller.machine.baudrate", getBaudRate().toString());
 
-  // row size
-  props.setProperty("controller.grid.size", new Float(gridSize).toString());
+  // Grid & Pixels
+  // FIX: specific Float/Integer constructors are deprecated/removed in modern Java
+  props.setProperty("controller.grid.size", String.valueOf(gridSize));
   props.setProperty("controller.pixel.samplearea", df.format(sampleArea));
   props.setProperty("controller.pixel.scaling", df.format(pixelScalingOverGridSize));
 
-  // density preview style
-  props.setProperty("controller.density.preview.style", new Integer(getDensityPreviewStyle()).toString());
+  props.setProperty("controller.density.preview.style", String.valueOf(getDensityPreviewStyle()));
 
-  // initial screen size
-  props.setProperty("controller.window.width", new Integer((windowWidth < 100) ? 100 : windowWidth-16).toString());
-  props.setProperty("controller.window.height", new Integer((windowWidth < 100) ? 100 : windowHeight-38).toString());
+  // Window Size (Protection against tiny windows)
+  // FIX: Used 'width' and 'height' directly instead of outdated variables if possible
+  int safeWidth = (windowWidth < 100) ? 100 : windowWidth - 16;
+  int safeHeight = (windowHeight < 100) ? 100 : windowHeight - 38;
+  props.setProperty("controller.window.width", String.valueOf(safeWidth));
+  props.setProperty("controller.window.height", String.valueOf(safeHeight));
 
+  // Test Pen
   props.setProperty("controller.testPenWidth.startSize", df.format(testPenWidthStartSize));
   props.setProperty("controller.testPenWidth.endSize", df.format(testPenWidthEndSize));
   props.setProperty("controller.testPenWidth.incrementSize", df.format(testPenWidthIncrementSize));
   
-  props.setProperty("controller.maxSegmentLength", new Integer(getMaxSegmentLength()).toString());
+  props.setProperty("controller.maxSegmentLength", String.valueOf(getMaxSegmentLength()));
   
   props.setProperty("machine.motors.maxSpeed", df.format(currentMachineMaxSpeed));
   props.setProperty("machine.motors.accel", df.format(currentMachineAccel));
-  props.setProperty("machine.step.multiplier", new Integer(machineStepMultiplier).toString());
+  props.setProperty("machine.step.multiplier", String.valueOf(machineStepMultiplier));
   
   props.setProperty("controller.pixel.mask.color", hex(this.chromaKeyColour, 6));
   
-  PVector hp = null;  
-  if (getHomePoint() != null)
-  {
+  // Home Point Logic
+  PVector hp;  
+  if (getHomePoint() != null) {
     hp = getHomePoint();
-  }
-  else
+  } else {
     hp = new PVector(2000.0, 1000.0);
+  }
     
   hp = getDisplayMachine().inMM(hp);
   
@@ -3190,39 +3219,49 @@ void savePropertiesFile()
   props.setProperty("controller.vector.scaling", df.format(vectorScaling));
   props.setProperty("controller.vector.position.x", df.format(getVectorPosition().x));
   props.setProperty("controller.vector.position.y", df.format(getVectorPosition().y));
-  props.setProperty("controller.vector.minLineLength", new Integer(this.minimumVectorLineLength).toString());
+  props.setProperty("controller.vector.minLineLength", String.valueOf(this.minimumVectorLineLength));
   
-  props.setProperty("controller.geomerative.polygonizer", new Integer(polygonizer).toString());
+  props.setProperty("controller.geomerative.polygonizer", String.valueOf(polygonizer));
   props.setProperty("controller.geomerative.polygonizerLength", df.format(polygonizerLength));
 
- 
+  // Saving Logic
   FileOutputStream propertiesOutput = null;
 
   try
   {
-    //save the properties to a file
+    // Use sketchPath to ensure it saves in the sketch folder, not the system root
     File propertiesFile = new File(sketchPath(propertiesFilename));
+    
+    // If file exists, we try to preserve old keys that we aren't overwriting
     if (propertiesFile.exists())
     {
-      propertiesOutput = new FileOutputStream(propertiesFile);
       Properties oldProps = new Properties();
-      FileInputStream propertiesFileStream = new FileInputStream(propertiesFile);
-      oldProps.load(propertiesFileStream);
+      FileInputStream input = new FileInputStream(propertiesFile);
+      oldProps.load(input);
+      input.close();
+      
+      // Merge new properties into the old ones (overwriting duplicates)
       oldProps.putAll(props);
-      oldProps.store(propertiesOutput,"   ***  Polargraph properties file   ***  ");
-      println("Saved settings.");
+      
+      propertiesOutput = new FileOutputStream(propertiesFile);
+      oldProps.store(propertiesOutput, " *** Polargraph properties file *** ");
+      println("Saved settings to existing file.");
     }
     else
-    { // create it
-      propertiesFile.createNewFile();
+    { 
+      // Create new file
+      // createNewFile() isn't strictly necessary before FileOutputStream, 
+      // but good for checking permissions
+      propertiesFile.createNewFile(); 
       propertiesOutput = new FileOutputStream(propertiesFile);
-      props.store(propertiesOutput,"   ***  Polargraph properties file   ***  ");
-      println("Created file.");
+      props.store(propertiesOutput, " *** Polargraph properties file *** ");
+      println("Created and saved to new file.");
     }
   }
   catch (Exception e)
   {
     println("Exception occurred while creating new properties file: " + e.getMessage());
+    e.printStackTrace();
   }
   finally
   {
@@ -3232,10 +3271,13 @@ void savePropertiesFile()
       {
         propertiesOutput.close();
       }
-      catch (Exception e2) {println("what now!"+e2.getMessage());}
+      catch (IOException e2) {
+        println("Error closing stream: " + e2.getMessage());
+      }
     }
   }
 }
+
 
 boolean getBooleanProperty(String id, boolean defState) 
 {

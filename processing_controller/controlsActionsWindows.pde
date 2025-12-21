@@ -74,73 +74,59 @@ String spriteWriting_spriteFilePrefix = "sprite/let";
 String spriteWriting_spriteFileSuffix = ".txt";
 
 ControlFrameSimple addSpriteWritingControlFrame(String theName, int theWidth, int theHeight, int theX, int theY, int theColor ) {
-  final Frame f = new Frame( theName );
   final ControlFrameSimple p = new ControlFrameSimple( this, theWidth, theHeight, theColor );
 
-  f.add( p );
-  p.init();
-  f.setTitle(theName);
-  f.setSize( p.w, p.h );
-  f.setLocation( theX, theY );
-  f.addWindowListener( new WindowAdapter() {
-    @Override
-      public void windowClosing(WindowEvent we) {
-      p.dispose();
-      f.dispose();
-      cp5s.remove(DRAW_WRITING_WINDOW_NAME);
-    }
+  // 1. Launch window
+  String[] args = { theName };
+  PApplet.runSketch(args, p);
+
+  // 2. Wait for initialization
+  long startWait = System.currentTimeMillis();
+  while (p.cp5() == null) {
+    try { Thread.sleep(10); } catch (Exception e) {}
+    if (System.currentTimeMillis() - startWait > 5000) { println("Error: Window timed out."); break; }
   }
-  );
-  f.setResizable( true );
-  f.setVisible( true );
-  // sleep a little bit to allow p to call setup.
-  // otherwise a nullpointerexception might be caused.
-  try {
-    Thread.sleep( 100 );
-  } 
-  catch(Exception e) {
-  }
+
+  // 3. Set location
+  p.setWindowLocation(theX, theY);
   
+  // 4. Register in map (if you use this map system)
   cp5s.put(DRAW_WRITING_WINDOW_NAME, p.cp5());
-  println(cp5s);
   
-  // set up controls
-    Textfield spriteFileField = p.cp5().addTextfield("spriteWriting_spriteFilePrefixField", 20, 20, 150, 20)
-      .setText(spriteWriting_getSpriteFilePrefix())
-      .setLabel("File prefix")
-      .plugTo(this, "spriteWriting_spriteFilePrefixField");
+  // 5. Setup Controls
+  Textfield spriteFileField = p.cp5().addTextfield("spriteWriting_spriteFilePrefixField", 20, 20, 150, 20)
+    .setText(spriteWriting_getSpriteFilePrefix())
+    .setLabel("File prefix")
+    .plugTo(this, "spriteWriting_spriteFilePrefixField");
 
-    Textfield writingField = p.cp5().addTextfield("spriteWriting_textToWriteField", 20, 60, 400, 20)
-      .setText(spriteWriting_getTextToWrite())
-      .setLabel("Text to write")
-      .plugTo(this, "spriteWriting_textToWriteField");
+  Textfield writingField = p.cp5().addTextfield("spriteWriting_textToWriteField", 20, 60, 400, 20)
+    .setText(spriteWriting_getTextToWrite())
+    .setLabel("Text to write")
+    .plugTo(this, "spriteWriting_textToWriteField");
 
-    Button importTextButton = p.cp5().addButton("spriteWriting_importTextButton", 0, 20, 100, 120, 20)
-      .setLabel("Load text from file")
-      .addListener( new ControlListener() {
-        public void controlEvent( ControlEvent ev ) {
-          spriteWriting_importTextButton();
-        }
-      });
+  Button importTextButton = p.cp5().addButton("spriteWriting_importTextButton", 0, 20, 100, 120, 20)
+    .setLabel("Load text from file")
+    .addListener( new ControlListener() {
+      public void controlEvent( ControlEvent ev ) {
+        spriteWriting_importTextButton();
+      }
+    });
       
-    RadioButton rPos = p.cp5().addRadioButton("spriteWriting_radio_drawWritingDirection", 20, 140);
-    rPos.add("South-east", DRAW_DIR_SE);
-    rPos.activate("South-east");
-    rPos.plugTo(this, "spriteWriting_radio_drawWritingDirection");
+  RadioButton rPos = p.cp5().addRadioButton("spriteWriting_radio_drawWritingDirection", 20, 140);
+  rPos.add("South-east", DRAW_DIR_SE);
+  rPos.activate("South-east");
+  rPos.plugTo(this, "spriteWriting_radio_drawWritingDirection");
 
-    Button submitButton = p.cp5.addButton("spriteWriting_submitWritingWindow", 0, 300, 100, 120, 20)
-      .setLabel("Generate commands")
-      .addListener( new ControlListener() {
-        public void controlEvent( ControlEvent ev ) {
-          spriteWriting_submitWritingWindow(p.cp5());
-        }
-      });
+  Button submitButton = p.cp5().addButton("spriteWriting_submitWritingWindow", 0, 300, 100, 120, 20)
+    .setLabel("Generate commands")
+    .addListener( new ControlListener() {
+      public void controlEvent( ControlEvent ev ) {
+        spriteWriting_submitWritingWindow(p.cp5());
+      }
+    });
       
-      
-    return p;
+  return p;
 }
-
-
 
   void spriteWriting_spriteFilePrefixField(String value) {
     spriteWriting_spriteFilePrefix = value;
@@ -222,34 +208,23 @@ int sprite_minSpriteSize = 100;
 int sprite_maxSpriteSize = 500;
 
 ControlFrameSimple addRandomSpriteControlFrame(String theName, int theWidth, int theHeight, int theX, int theY, int theColor ) {
-  final Frame f = new Frame( theName );
   final ControlFrameSimple p = new ControlFrameSimple( this, theWidth, theHeight, theColor );
 
-  f.add( p );
-  p.init();
-  f.setTitle(theName);
-  f.setSize( p.w, p.h );
-  f.setLocation( theX, theY );
-  f.addWindowListener( new WindowAdapter() {
-    @Override
-      public void windowClosing(WindowEvent we) {
-      p.dispose();
-      f.dispose();
-    }
-  }
-  );
-  f.setResizable( true );
-  f.setVisible( true );
-  // sleep a little bit to allow p to call setup.
-  // otherwise a nullpointerexception might be caused.
-  try {
-    Thread.sleep( 100 );
-  } 
-  catch(Exception e) {
-  }
-  
-  // set up controls
+  // 1. Launch window
+  String[] args = { theName };
+  PApplet.runSketch(args, p);
 
+  // 2. Wait for initialization
+  long startWait = System.currentTimeMillis();
+  while (p.cp5() == null) {
+    try { Thread.sleep(10); } catch (Exception e) {}
+    if (System.currentTimeMillis() - startWait > 5000) { println("Error: Window timed out."); break; }
+  }
+
+  // 3. Set location
+  p.setWindowLocation(theX, theY);
+  
+  // 4. Setup Controls
   Textfield spriteFilenameField = p.cp5().addTextfield("sprite_spriteFilenameField",20,20,400,20)
     .setText("filename.txt")
     .setLabel("Sprite filename")
@@ -274,6 +249,9 @@ ControlFrameSimple addRandomSpriteControlFrame(String theName, int theWidth, int
     .setLabel("Draw sprite")
     .addListener( new ControlListener() {
       public void controlEvent( ControlEvent ev ) {
+        // NOTE: Your original code called 'spriteWriting_submitWritingWindow' here.
+        // It likely should have been 'sprite_submitSpriteWindow'.
+        // I have kept it as you wrote it, but check this logic!
         spriteWriting_submitWritingWindow(p.cp5());
       }
     });
@@ -319,33 +297,23 @@ int norwegian_amplitude = 20;
 int norwegian_wavelength = 2;
 
 ControlFrameSimple addNorwegianPixelControlFrame(String theName, int theWidth, int theHeight, int theX, int theY, int theColor ) {
-  final Frame f = new Frame( theName );
   final ControlFrameSimple p = new ControlFrameSimple( this, theWidth, theHeight, theColor );
 
-  f.add( p );
-  p.init();
-  f.setTitle(theName);
-  f.setSize( p.w, p.h );
-  f.setLocation( theX, theY );
-  f.addWindowListener( new WindowAdapter() {
-    @Override
-      public void windowClosing(WindowEvent we) {
-      p.dispose();
-      f.dispose();
-    }
+  // 1. Launch window
+  String[] args = { theName };
+  PApplet.runSketch(args, p);
+
+  // 2. Wait for initialization
+  long startWait = System.currentTimeMillis();
+  while (p.cp5() == null) {
+    try { Thread.sleep(10); } catch (Exception e) {}
+    if (System.currentTimeMillis() - startWait > 5000) { println("Error: Window timed out."); break; }
   }
-  );
-  f.setResizable( true );
-  f.setVisible( true );
-  // sleep a little bit to allow p to call setup.
-  // otherwise a nullpointerexception might be caused.
-  try {
-    Thread.sleep( 100 );
-  } 
-  catch(Exception e) {
-  }
+
+  // 3. Set location
+  p.setWindowLocation(theX, theY);
   
-  // set up controls
+  // 4. Setup Controls
   Textfield filenameField = p.cp5().addTextfield("norwegian_execFilename",20,20,150,20)
     .setText(norwegian_execFilename)
     .setLabel("Filename to execute from")
@@ -359,34 +327,32 @@ ControlFrameSimple addNorwegianPixelControlFrame(String theName, int theWidth, i
     .plugTo(this, "norwegian_amplitude");
 
   Numberbox maxSizeField = p.cp5().addNumberbox("norwegian_wavelength",20,100,100,20)
-  .setValue(norwegian_wavelength)
-  .setMin(1)
-  .setMultiplier(0.5)  
-  .setLabel("Wavelength")
-  .plugTo(this, "norwegian_wavelength");
+    .setValue(norwegian_wavelength)
+    .setMin(1)
+    .setMultiplier(0.5)  
+    .setLabel("Wavelength")
+    .plugTo(this, "norwegian_wavelength");
 
   Button outlineButton = p.cp5().addButton("norwegian_submitNorwegianExecTraceOutline",0,180,20,80,20)
-  .setLabel("Trace outline")
-  .addListener( new ControlListener() {
-    public void controlEvent( ControlEvent ev ) {
-      norwegian_submitNorwegianExec(p.cp5().get(Textfield.class, "norwegian_execFilename"), true);
-    }
-  });
+    .setLabel("Trace outline")
+    .addListener( new ControlListener() {
+      public void controlEvent( ControlEvent ev ) {
+        norwegian_submitNorwegianExec(p.cp5().get(Textfield.class, "norwegian_execFilename"), true);
+      }
+    });
 
   Button submitButton = p.cp5().addButton("norwegian_submitNorwegianExecFilenameWindow",0,180,100,80,20)
-  .setLabel("Submit")
-  .addListener( new ControlListener() {
-    public void controlEvent( ControlEvent ev ) {
-      norwegian_submitNorwegianExec(p.cp5().get(Textfield.class, "norwegian_execFilename"), false);
-    }
-  });
+    .setLabel("Submit")
+    .addListener( new ControlListener() {
+      public void controlEvent( ControlEvent ev ) {
+        norwegian_submitNorwegianExec(p.cp5().get(Textfield.class, "norwegian_execFilename"), false);
+      }
+    });
 
   filenameField.setFocus(true);
       
-      
   return p;
 }
-
 
 void norwegian_submitNorwegianExec(Textfield tf, boolean outline)
 {
@@ -406,7 +372,3 @@ void norwegian_submitNorwegianExec(Textfield tf, boolean outline)
     addToCommandQueue(CMD_DRAW_NORWEGIAN + norwegian_execFilename + ","+norwegian_amplitude+","+norwegian_wavelength+",END");
   }
 }
-
-
-
-

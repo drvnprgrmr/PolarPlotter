@@ -27,8 +27,12 @@ public class ControlFrame extends PApplet {
     return this.parent;
   }
 
+void settings() {
+  size(w, h);
+  
+}
+
   public void setup() {
-    size(w, h);
     frameRate(5);
   }
 
@@ -47,6 +51,3 @@ public class ControlFrame extends PApplet {
     background(abc);
   }
 }
-
-
-
