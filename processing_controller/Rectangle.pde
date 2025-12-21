@@ -1,30 +1,6 @@
 /**
-  Polargraph controller
-  Copyright Sandy Noble 2015.
-
-  This file is part of Polargraph Controller.
-
-  Polargraph Controller is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  Polargraph Controller is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with Polargraph Controller.  If not, see <http://www.gnu.org/licenses/>.
-    
-  Requires the excellent ControlP5 GUI library available from http://www.sojamo.de/libraries/controlP5/.
-  Requires the excellent Geomerative library available from http://www.ricardmarxer.com/geomerative/.
-  
-  This is an application for controlling a polargraph machine, communicating using ASCII command language over a serial link.
-
-  sandy.noble@gmail.com
-  http://www.polargraph.co.uk/
-  https://github.com/euphy/polargraphcontroller
+  Rectangle Class
+  A geometric utility helper.
 */
 class Rectangle
 {
@@ -47,6 +23,10 @@ class Rectangle
     this.size = new PVector(r.getSize().x, r.getSize().y);
   }
   
+  // ----------------------------------------------------------------
+  // DIMENSIONS
+  // ----------------------------------------------------------------
+
   public float getWidth()
   {
     return this.size.x;
@@ -63,10 +43,26 @@ class Rectangle
   {
     this.size.y = h;
   }
+  
+  // ----------------------------------------------------------------
+  // POSITIONS & BOUNDS
+  // ----------------------------------------------------------------
+
   public PVector getPosition()
   {
     return this.position;
   }
+  public void setPosition(float x, float y)
+  {
+    if (this.position == null)
+      this.position = new PVector(x, y);
+    else
+    {
+      this.position.x = x;
+      this.position.y = y;
+    }
+  }
+
   public PVector getSize()
   {
     return this.size;
@@ -100,30 +96,26 @@ class Rectangle
     return getPosition().y + getSize().y;
   }
   
-  public void setPosition(float x, float y)
-  {
-    if (this.position == null)
-      this.position = new PVector(x, y);
-    else
-    {
-      this.position.x = x;
-      this.position.y = y;
-    }
-  }
-  
+  // ----------------------------------------------------------------
+  // LOGIC
+  // ----------------------------------------------------------------
+
+  // Checks if a specific point is inside this rectangle
   public Boolean surrounds(PVector p)
   {
+    // Removed the "-1" offset from the original code (used for pixel array safety).
+    // Standard geometric containment:
     if (p.x >= this.getLeft()
     && p.x < this.getRight()
     && p.y >= this.getTop()
-    && p.y < this.getBottom()-1)
+    && p.y < this.getBottom())
       return true;
     else
       return false;
   }
   
   public String toString() {
-	return new StringBuffer().append("Rectangle pos: ").append(this.getPosition()).append(", size: ").append(this.getSize()).append(".").toString();
+    return "Rectangle pos: " + this.getPosition() + ", size: " + this.getSize();
   }
   
 }
