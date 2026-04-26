@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="43.145999999999994mm" height="43.145999999999994mm" viewBox="0 0 43.145999999999994 43.145999999999994" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<g id="Hole" transform="translate(21.573000,21.573000) scale(1,-1)">
+<path id="Hole_f0000"  d="M -21.15 16.157392488184016 L -21.15 16.157392488184016 L -16.157392488183994 21.15 L -16.157392488183994 21.15 L -21.15 16.157392488184016 Z " stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980;fill-opacity:1.0;fill-rule: evenodd"/>
+<path id="Hole_f0001"  d="M -21.15 -16.157392488184016 L -21.15 16.157392488184016 L -21.15 16.157392488184016 L -21.15 -16.157392488184016 L -21.15 -16.157392488184016 Z " stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980;fill-opacity:1.0;fill-rule: evenodd"/>
+<path id="Hole_f0002"  d="M -16.157392488183994 21.15 L -16.157392488183994 21.15 L 16.157392488183994 21.15 L 16.157392488183994 21.15 L -16.157392488183994 21.15 Z " stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980;fill-opacity:1.0;fill-rule: evenodd"/>
+<circle cx="-15.5" cy="-15.5" r="1.7" stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980"/>
+<circle cx="-15.5" cy="-15.5" r="1.7" stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980"/>
+<path id="Hole_f0005"  d="M -16.15739248818399 -21.15 L -21.15 -16.157392488184016 L -21.15 -16.157392488184016 L -16.15739248818399 -21.15 L -16.15739248818399 -21.15 Z " stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980;fill-opacity:1.0;fill-rule: evenodd"/>
+<path id="Hole_f0006"  d="M 16.157392488183994 21.15 L 16.157392488183994 21.15 L 21.15 16.15739248818403 L 21.15 16.15739248818403 L 16.157392488183994 21.15 Z " stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980;fill-opacity:1.0;fill-rule: evenodd"/>
+<path id="Hole_f0007"  d="M 16.15739248818399 -21.15 L -16.15739248818399 -21.15 L -16.15739248818399 -21.15 L 16.15739248818399 -21.15 L 16.15739248818399 -21.15 Z " stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980;fill-opacity:1.0;fill-rule: evenodd"/>
+<path id="Hole_f0008"  d="M 21.15 16.15739248818403 L 21.15 16.15739248818403 L 21.15 -16.15739248818403 L 21.15 -16.15739248818403 L 21.15 16.15739248818403 Z " stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980;fill-opacity:1.0;fill-rule: evenodd"/>
+<path id="Hole_f0009"  d="M 21.15 -16.15739248818403 L 16.15739248818399 -21.15 L 16.15739248818399 -21.15 L 21.15 -16.15739248818403 L 21.15 -16.15739248818403 Z " stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980;fill-opacity:1.0;fill-rule: evenodd"/>
+<circle cx="-15.5" cy="-15.5" r="1.7" stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980"/>
+<circle cx="15.5" cy="-15.5" r="1.7" stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980"/>
+<circle cx="-15.5" cy="15.5" r="1.7" stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980"/>
+<circle cx="15.5" cy="15.5" r="1.7" stroke="#191919" stroke-width="0.7 px" style="stroke-width:0.7;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:square;fill:#727980"/>
+<title>b'Hole'</title>
+</g>
+</svg>
